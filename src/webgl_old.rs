@@ -5,12 +5,6 @@ use stdweb::unstable::TryInto;
 use stdweb::web::html_element::CanvasElement;
 use stdweb::web::*;
 
-use js_sys::WebAssembly;
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGlRenderingContext, 
-WebGlShader,HtmlCanvasElement,WebGLBuffer,WebGlRenderingContext};
-
 pub type Reference = i32;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -19,7 +13,7 @@ pub struct GLContext {
     pub is_webgl2: bool,
 }
 
-pub type WebGLContext<'a> = &'a HtmlCanvasElement;
+pub type WebGLContext<'a> = &'a CanvasElement;
 
 impl WebGLRenderingContext {
     pub fn new(canvas: WebGLContext) -> WebGLRenderingContext {
@@ -29,6 +23,48 @@ impl WebGLRenderingContext {
     }
 }
 
+// Using a "hidden feature" of stdweb to reduce the js serialized overhead
+extern "C" {
+
+    fn __js_uniform4vf(
+        ctx: i32,
+        loc: i32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: f32,
+        _: *const u8,
+    );
+}
+
+// Using a "hidden feature" of stdweb to reduce the js serialized overhead
+macro_rules! __js_peel {
+    ($($token:tt)*) => {
+        _js_impl!( @stringify [@no_return] -> $($token)* )
+    };
+}
+
+macro_rules! js_raw {
+    ({$($token:tt)*}) => {
+        __js_raw_asm!(__js_peel!($($token)*))
+    };
+
+    ( {$($token:tt)*}, [$($args:tt)*]) => {
+        __js_raw_asm!(__js_peel!($($token)*), $($args)*)
+    };
+}
 
 impl GLContext {
     #[inline]
@@ -40,35 +76,89 @@ impl GLContext {
         js!{ console.log(@{msg.into()})};
     }
 
-    pub fn new<'a>(id:&str) -> GLContext {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document.get_element_by_id(id).unwrap();
-        let context = canvas
-           .get_context("webgl")?
-           .unwrap()
-           .dyn_into::<WebGlRenderingContext>()?;
-       
+    pub fn new<'a>(canvas: &Element) -> GLContext {
+        let gl = js!{
+            var gl = (@{canvas}).getContext("webgl2", {alpha:false});
+            var version = 2;
+
+            if (!gl) {
+                gl = (@{canvas}).getContext("webgl", {alpha:false});
+                version = 1;
+            }
+
+            var ext = gl.getExtension("WEBGL_depth_texture");
+
+            // Create gl related objects
+            if( !Module.gl) {
+                Module.gl = {};
+                Module.gl.counter = 1;
+                Module.gl.version = version;
+
+                Module.gl.matrix4x4 = new Float32Array([
+                    1.0, 0,   0,   0,
+                    0,   1.0, 0.0, 0,
+                    0,   0,   1.0, 0,
+                    0,   0,   0,   1.0
+                ]);
+
+                Module.gl.pool = {};
+                Module.gl.get = function(id) {
+                    return Module.gl.pool[id];
+                };
+                Module.gl.add = function(o) {
+                    var c = Module.gl.counter;
+                    Module.gl.pool[c] = o;
+                    Module.gl.counter += 1;
+                    return c;
+                };
+
+                Module.gl.remove = function(id) {
+                    delete Module.gl.pool[id];
+                    return c;
+                };
+                console.log("opengl "+gl.getParameter(gl.VERSION));
+                console.log("shading language " + gl.getParameter(gl.SHADING_LANGUAGE_VERSION));
+                console.log("vendor " + gl.getParameter(gl.VENDOR));
+            }
+
+            return Module.gl.add(gl);
+        };
+
+        let version: u32 = js!( return Module.gl.version; ).try_into().unwrap();
+
         GLContext {
-            reference: context,
-            is_webgl2: true,
+            reference: gl.try_into().unwrap(),
+            is_webgl2: version == 2,
         }
     }
 
     pub fn create_buffer(&self) -> WebGLBuffer {
         self.log("create_buffer");
-        let value = self.reference.create_buffer()?;
+        let value = js_raw!({
+            var ctx = Module.gl.get(@{a0});
+            return Module.gl.add(ctx.createBuffer());
+        }, [self.reference] );
         WebGLBuffer(value)
     }
 
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
         self.log("delete_buffer");
-        self.reference.delete_buffer(Some(buffer));
+        js! {
+            @(no_return)
+            var ctx = Module.gl.get(@{self.reference});
+            var b = Module.gl.get(@{buffer.deref()});
+            ctx.deleteBuffer(b);
+        };
     }
 
     pub fn buffer_data(&self, kind: BufferKind, data: &[u8], draw: DrawMode) {
         self.log("buffer_data");
 
-        self.reference.buffer_data_with_u8_array(kind as u32, TypedArray::from(data),draw as u32 )
+        js! {
+            @(no_return)
+            var ctx = Module.gl.get(@{self.reference});
+            ctx.bufferData(@{kind as u32},@{ TypedArray::from(data) }, @{draw as u32})
+        };
     }
 
     pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer) {
@@ -80,7 +170,6 @@ impl GLContext {
 
             ctx.bindBuffer(@{kind as u32},buf)
         };
-        
     }
 
     pub fn unbind_buffer(&self, kind: BufferKind) {
@@ -338,7 +427,10 @@ impl GLContext {
 
     pub fn draw_elements(&self, mode: Primitives, count: usize, kind: DataType, offset: u32) {
         self.log("draw_elemnts");
-        self.reference.draw_elements_with_i32(mode as i32, count as i32, kind as i32, offset as i32)
+        js_raw!({
+            var ctx = Module.gl.get(@{0});
+            ctx.drawElements(@{1},@{2},@{3},@{4});
+        }, [self.reference, mode as i32, count as i32, kind as i32, offset as i32 ]);
     }
 
     pub fn draw_arrays(&self, mode: Primitives, count: usize) {
@@ -759,7 +851,13 @@ impl GLContext {
 
     pub fn bind_vertex_array(&self, vao: &WebGLVertexArray) {
         self.log("bind_vertex_array");
-        self.reference.bind_vertex_array(Some(vao));
+        js_raw!({
+            var ctx = Module.gl.get(@{0});
+            if (ctx.bindVertexArray) {
+                var vao = Module.gl.get(@{1});
+                ctx.bindVertexArray(vao);
+            }
+        }, [self.reference, vao.0] );
     }
 
     pub fn unbind_vertex_array(&self, vao: &WebGLVertexArray) {
