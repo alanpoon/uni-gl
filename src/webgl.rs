@@ -1,15 +1,12 @@
 use common::*;
 use glenum::*;
 use std::ops::Deref;
-use stdweb::unstable::TryInto;
-use stdweb::web::html_element::CanvasElement;
-use stdweb::web::*;
 
-use js_sys::WebAssembly;
+//use js_sys::WebAssembly;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{WebGlProgram, WebGlRenderingContext, 
-WebGlShader,HtmlCanvasElement,WebGLBuffer,WebGlRenderingContext};
+use web_sys::{Element,WebGlProgram, WebGlRenderingContext, 
+WebGlShader,HtmlCanvasElement};
 
 pub type Reference = i32;
 
@@ -29,20 +26,18 @@ impl WebGLRenderingContext {
     }
 }
 
-
 impl GLContext {
     #[inline]
-    pub fn log<T: Into<String>>(&self, _msg: T) {
+    pub fn log<T: Into<JsValue>>(&self, _msg: T) {
         // js!{ console.log(@{msg.into()})};
+        web_sys::console::log_1(&_msg.into());
     }
 
-    pub fn print<T: Into<String>>(msg: T) {
-        js!{ console.log(@{msg.into()})};
+    pub fn print<T: Into<JsValue>>(msg: T) {
+        web_sys::console::log_1(&msg.into());
     }
 
-    pub fn new<'a>(id:&str) -> GLContext {
-        let document = web_sys::window().unwrap().document().unwrap();
-        let canvas = document.get_element_by_id(id).unwrap();
+    pub fn new<'a>(canvas: &WebGLContext) -> GLContext {
         let context = canvas
            .get_context("webgl")?
            .unwrap()
@@ -67,41 +62,25 @@ impl GLContext {
 
     pub fn buffer_data(&self, kind: BufferKind, data: &[u8], draw: DrawMode) {
         self.log("buffer_data");
-
-        self.reference.buffer_data_with_u8_array(kind as u32, TypedArray::from(data),draw as u32 )
+        self.reference.buffer_data_with_u8_array(kind as u32, data,draw as u32 )
     }
 
     pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer) {
         self.log("bind_buffer");
-        js! {
-            @(no_return)
-            var ctx = Module.gl.get(@{self.reference});
-            var buf = Module.gl.get(@{buffer.deref()});
-
-            ctx.bindBuffer(@{kind as u32},buf)
-        };
-        
+        self.reference.bind_buffer(kind as u32,buffer);
     }
 
     pub fn unbind_buffer(&self, kind: BufferKind) {
         self.log("unbind_buffer");
-        js! {
-            @(no_return)
-            var ctx = Module.gl.get(@{&self.reference});
-            ctx.bindBuffer(@{kind as u32},null);
-        }
+        self.reference.bind_buffer(kind as u32,None);
     }
 
     pub fn create_shader(&self, kind: ShaderKind) -> WebGLShader {
         self.log("create_shader");
-        let value = js! {
-            var ctx = Module.gl.get(@{&self.reference});
-            return Module.gl.add( ctx.createShader(@{ kind as u32 }) );
-        };
-
+        let value = self.reference.create_shader(kind as u32);
         WebGLShader(value.try_into().unwrap())
     }
-
+/*
     pub fn shader_source(&self, shader: &WebGLShader, code: &str) {
         self.log("shader_source");
         js! {
@@ -247,18 +226,12 @@ impl GLContext {
             ctx.enableVertexAttribArray(@{location})
         };
     }
-
+*/
     pub fn clear_color(&self, r: f32, g: f32, b: f32, a: f32) {
         self.log("clear_color");
-
-        js! {
-            @(no_return)
-            var p = [@{r},@{g},@{b},@{a}];
-            var ctx = Module.gl.get(@{&self.reference});
-            ctx.clearColor(p[0],p[1],p[2],p[3]);
-        };
+        self.reference.clear_color(r,g,b,a)
     }
-
+/*
     pub fn enable(&self, flag: i32) {
         self.log("enable");
         js! {
@@ -315,16 +288,12 @@ impl GLContext {
             ctx.clearDepth(@{value});
         }
     }
-
+*/
     pub fn clear(&self, bit: BufferBit) {
         self.log("clear");
-        js! {
-            @(no_return)
-            var ctx = Module.gl.get(@{&self.reference});
-            ctx.clear(@{bit as i32})
-        };
+        self.reference.clear(bit as i32);
     }
-
+/*
     pub fn viewport(&self, x: i32, y: i32, width: u32, height: u32) {
         self.log("viewport");
         let params = js! { return [@{x},@{y},@{width},@{height}] };
@@ -904,4 +873,5 @@ impl GLContext {
             ctx.bindFramebuffer(@{buffer as u32},null)
         }
     }
+*/
 }
