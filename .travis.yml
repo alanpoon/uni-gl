@@ -1,0 +1,19 @@
+--- 
+addons: 
+  apt: 
+    packages: ~
+cache: cargo
+language: rust
+matrix: 
+  allow_failures: 
+    - 
+      os: osx
+os: 
+  - linux
+  - osx
+rust: 
+  - nightly
+script: 
+  - "cargo install wasm-pack"
+  - "wasm-pack build"
+sudo: false
