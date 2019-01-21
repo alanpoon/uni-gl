@@ -19,9 +19,9 @@ pub struct GLContext {
 pub type WebGLContext<'a> = &'a HtmlCanvasElement;
 
 impl WebGLRenderingContext {
-    pub fn new(canvas: WebGLContext) -> WebGLRenderingContext {
+    pub fn new(canvas: &WebGLContext) -> WebGLRenderingContext {
         WebGLRenderingContext {
-            common: GLContext::new(&canvas.clone()),
+            common: GLContext::new(&canvas),
         }
     }
 }
