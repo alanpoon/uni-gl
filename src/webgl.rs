@@ -21,7 +21,7 @@ pub type WebGLContext<'a> = &'a HtmlCanvasElement;
 impl WebGLRenderingContext {
     pub fn new(canvas: WebGLContext) -> WebGLRenderingContext {
         WebGLRenderingContext {
-            common: GLContext::new(&canvas.clone().into()),
+            common: GLContext::new(&canvas.clone()),
         }
     }
 }
