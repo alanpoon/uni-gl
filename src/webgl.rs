@@ -6,9 +6,9 @@ use std::ops::Deref;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{Element,WebGlProgram, WebGlRenderingContext, 
-WebGlShader,HtmlCanvasElement};
+WebGlShader,HtmlCanvasElement,WebGlBuffer};
 
-pub type Reference = i32;
+pub type Reference = *const WebGlRenderingContext;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct GLContext {
@@ -39,25 +39,29 @@ impl GLContext {
 
     pub fn new<'a>(canvas: &WebGLContext) -> GLContext {
         let context = canvas
-           .get_context("webgl")?
+           .get_context("webgl")
            .unwrap()
-           .dyn_into::<WebGlRenderingContext>()?;
+           .unwrap()
+           .dyn_into::<WebGlRenderingContext>().unwrap();
        
         GLContext {
-            reference: context,
+            reference: &context,
             is_webgl2: true,
         }
     }
 
     pub fn create_buffer(&self) -> WebGLBuffer {
         self.log("create_buffer");
-        let value = self.reference.create_buffer()?;
-        WebGLBuffer(value)
+        let k:WebGlRenderingContext = *self.reference;
+        let buffer:WebGlBuffer = k.create_buffer().unwrap();
+        WebGLBuffer(*buffer)
     }
 
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
         self.log("delete_buffer");
-        self.reference.delete_buffer(Some(buffer));
+        let k:WebGlRenderingContext = *self.reference;
+        let b2:WebGlBuffer = buffer.0;
+        k.delete_buffer(Some(&b2));
     }
 
     pub fn buffer_data(&self, kind: BufferKind, data: &[u8], draw: DrawMode) {
