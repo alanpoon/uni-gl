@@ -61,8 +61,8 @@ impl GLContext {
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
         self.log("delete_buffer");
         let k:WebGlRenderingContext = *self.reference;
-        let b2:WebGlBuffer = buffer.0;
-        k.delete_buffer(Some(&b2));
+        let b2:WebGlBuffer = buffer.deref();
+        k.delete_buffer(Some(&b2)).unwrap();
     }
 
     pub fn buffer_data(&self, kind: BufferKind, data: &[u8], draw: DrawMode) {
