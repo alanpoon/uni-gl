@@ -52,10 +52,10 @@ impl GLContext {
 
     pub fn create_buffer(&self) -> WebGLBuffer {
         self.log("create_buffer");
-        let k:WebGlRenderingContext = *self.reference;
-        let buffer:WebGlBuffer = k.create_buffer().unwrap();
-        let pointer = &buffer;
-        WebGLBuffer(pointer)
+        let mut k:WebGlRenderingContext = *self.reference;
+        k.create_buffer().unwrap();
+        
+        WebGLBuffer(&k)
     }
 
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
