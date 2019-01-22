@@ -54,7 +54,7 @@ impl GLContext {
         self.log("create_buffer");
         let k:WebGlRenderingContext = *self.reference;
         let buffer:WebGlBuffer = k.create_buffer().unwrap();
-        let pointer = *buffer;
+        let pointer = &buffer;
         WebGLBuffer(pointer)
     }
 
