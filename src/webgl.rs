@@ -54,7 +54,8 @@ impl GLContext {
         self.log("create_buffer");
         let k:WebGlRenderingContext = *self.reference;
         let buffer:WebGlBuffer = k.create_buffer().unwrap();
-        WebGLBuffer(*buffer)
+        let pointer = *buffer;
+        WebGLBuffer(pointer)
     }
 
     pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
