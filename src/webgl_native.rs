@@ -100,7 +100,7 @@ impl GLContext {
     }
 
     /// create a new OpenGL buffer
-    pub fn create_buffer(&self) -> WebGLBuffer {
+    pub fn create_buffer(&self) -> WebGLBuffer<u32> {
         let mut buffer = WebGLBuffer(0);
         unsafe {
             gl::GenBuffers(1, &mut buffer.0);
@@ -110,7 +110,7 @@ impl GLContext {
     }
 
     /// delete an existing buffer
-    pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
+    pub fn delete_buffer(&self, buffer: &WebGLBuffer<u32>) {
         unsafe {
             gl::DeleteBuffers(1, &buffer.0);
         }
@@ -118,7 +118,7 @@ impl GLContext {
     }
 
     /// bind a buffer to current state.
-    pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer) {
+    pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer<u32>) {
         unsafe {
             gl::BindBuffer(kind as _, buffer.0);
         }
@@ -156,7 +156,7 @@ impl GLContext {
     }
 
     /// create a new shader.
-    pub fn create_shader(&self, kind: ShaderKind) -> WebGLShader {
+    pub fn create_shader(&self, kind: ShaderKind) -> WebGLShader<u32> {
         let shader = unsafe { WebGLShader(gl::CreateShader(kind as _)) };
         check_gl_error("create_shader");
 
@@ -164,7 +164,7 @@ impl GLContext {
     }
 
     /// set or replace the source code in a shader
-    pub fn shader_source(&self, shader: &WebGLShader, source: &str) {
+    pub fn shader_source(&self, shader: &WebGLShader<u32>, source: &str) {
         let src = CString::new(source).unwrap();
         unsafe {
             use std::ptr;
@@ -174,7 +174,7 @@ impl GLContext {
     }
 
     /// compile a shader
-    pub fn compile_shader(&self, shader: &WebGLShader) {
+    pub fn compile_shader(&self, shader: &WebGLShader<u32>) {
         unsafe {
             gl::CompileShader(shader.0);
 
@@ -206,14 +206,14 @@ impl GLContext {
     }
 
     /// create a program
-    pub fn create_program(&self) -> WebGLProgram {
+    pub fn create_program(&self) -> WebGLProgram<u32> {
         let p = unsafe { WebGLProgram(gl::CreateProgram()) };
         check_gl_error("create_program");
         p
     }
 
     /// link a program
-    pub fn link_program(&self, program: &WebGLProgram) {
+    pub fn link_program(&self, program: &WebGLProgram<u32>) {
         unsafe {
             gl::LinkProgram(program.0);
             // Get the link status
@@ -243,7 +243,7 @@ impl GLContext {
     }
 
     /// bind a program to the current state.
-    pub fn use_program(&self, program: &WebGLProgram) {
+    pub fn use_program(&self, program: &WebGLProgram<u32>) {
         unsafe {
             gl::UseProgram(program.0);
         }
@@ -251,7 +251,7 @@ impl GLContext {
     }
 
     /// attach a shader to a program. A program must have two shaders : vertex and fragment shader.
-    pub fn attach_shader(&self, program: &WebGLProgram, shader: &WebGLShader) {
+    pub fn attach_shader(&self, program: &WebGLProgram<u32>, shader: &WebGLShader<u32>) {
         unsafe {
             gl::AttachShader(program.0, shader.0);
         }
@@ -259,7 +259,7 @@ impl GLContext {
     }
 
     /// associate a generic vertex attribute index with a named attribute
-    pub fn bind_attrib_location(&self, program: &WebGLProgram, name: &str, loc: u32) {
+    pub fn bind_attrib_location(&self, program: &WebGLProgram<u32>, name: &str, loc: u32) {
         let c_name = CString::new(name).unwrap();
         unsafe {
             gl::BindAttribLocation(program.0 as _, loc as _, c_name.as_ptr());
@@ -268,7 +268,7 @@ impl GLContext {
     }
 
     /// return the location of an attribute variable
-    pub fn get_attrib_location(&self, program: &WebGLProgram, name: &str) -> Option<u32> {
+    pub fn get_attrib_location(&self, program: &WebGLProgram<u32>, name: &str) -> Option<u32> {
         let c_name = CString::new(name).unwrap();
         unsafe {
             let location = gl::GetAttribLocation(program.0 as _, c_name.as_ptr());
@@ -283,9 +283,9 @@ impl GLContext {
     /// return the location of a uniform variable
     pub fn get_uniform_location(
         &self,
-        program: &WebGLProgram,
+        program: &WebGLProgram<u32>,
         name: &str,
-    ) -> Option<WebGLUniformLocation> {
+    ) -> Option<WebGLUniformLocation<u32>> {
         let c_name = CString::new(name).unwrap();
         unsafe {
             let location = gl::GetUniformLocation(program.0 as _, c_name.as_ptr());
@@ -293,7 +293,7 @@ impl GLContext {
             if location == -1 {
                 return None;
             }
-            return Some(WebGLUniformLocation {
+            return Some(WebGLUniformLocation<u32> {
                 reference: location as _,
                 name: name.into(),
             });

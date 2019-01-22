@@ -59,44 +59,44 @@ pub mod common {
     ///
     /// Buffers are used to store vertex attributes
     /// (position, normal, uv coordinates) and indexes for indexed rendering,
-    pub struct WebGLBuffer(pub Reference);
+    pub struct WebGLBuffer<T>(pub T);
 
-    impl Deref for WebGLBuffer {
-        type Target = Reference;
-        fn deref(&self) -> &Self::Target {
+    impl<T> Deref for WebGLBuffer<T> {
+        type Target = T;
+        fn deref(&self) -> &T {
             &self.0
         }
     }
 
     #[derive(Debug)]
     /// an OpenGL shader created with [`GLContext::create_shader`]
-    pub struct WebGLShader(pub Reference);
-    impl Deref for WebGLShader {
-        type Target = Reference;
+    pub struct WebGLShader<T>(pub T);
+    impl<T> Deref for WebGLShader<T> {
+        type Target = T;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug)]
     /// an OpenGL shader created with [`GLContext::create_shader`].
     ///
     /// There are two kinds of shaders ([`ShaderKind`]) : vertex and fragment
-    pub struct WebGLProgram(pub Reference);
-    impl Deref for WebGLProgram {
-        type Target = Reference;
+    pub struct WebGLProgram<T>(pub T);
+    impl<T> Deref for WebGLProgram<T> {
+        type Target = T;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
     }
 
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug)]
     /// an OpenGL program created with [`GLContext::create_program`].
     ///
     /// It is built with a vertex shader and a fragment shader.
-    pub struct WebGLTexture(pub Reference);
-    impl Deref for WebGLTexture {
-        type Target = Reference;
+    pub struct WebGLTexture<T>(pub T);
+    impl<T> Deref for WebGLTexture<T> {
+        type Target = T;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
@@ -106,9 +106,9 @@ pub mod common {
     /// an OpenGL vertex array object created with [`GLContext::create_vertex_array`].
     ///
     /// Vertex array objects store all the state needed to supply vertex data.
-    pub struct WebGLVertexArray(pub Reference);
-    impl Deref for WebGLVertexArray {
-        type Target = Reference;
+    pub struct WebGLVertexArray<T>(pub T);
+    impl<T> Deref for WebGLVertexArray<T> {
+        type Target = T;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
@@ -116,13 +116,13 @@ pub mod common {
 
     #[derive(Debug, PartialEq)]
     /// the reference to a uniform (global GLSL variable) inside a shader, obtained with [`GLContext::get_uniform_location`].
-    pub struct WebGLUniformLocation {
-        pub reference: Reference,
+    pub struct WebGLUniformLocation<T> {
+        pub reference: T,
         pub name: String,
     }
-    impl Deref for WebGLUniformLocation {
-        type Target = Reference;
-        fn deref(&self) -> &Reference {
+    impl<T> Deref for WebGLUniformLocation <T>{
+        type Target = T;
+        fn deref(&self) -> &Self::Target {
             &self.reference
         }
     }
@@ -131,9 +131,9 @@ pub mod common {
     /// an OpenGL Framebuffer created with [`GLContext::create_framebuffer`].
     ///
     /// This is a special type of buffer that can be used as destination for rendering.
-    pub struct WebGLFrameBuffer(pub Reference);
-    impl Deref for WebGLFrameBuffer {
-        type Target = Reference;
+    pub struct WebGLFrameBuffer<T>(pub T);
+    impl<T> Deref for WebGLFrameBuffer<T> {
+        type Target = T;
         fn deref(&self) -> &Self::Target {
             &self.0
         }
