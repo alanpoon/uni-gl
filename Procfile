@@ -1,0 +1,1 @@
+web: cargo install --force cargo-web && rustup override set nightly && rustup target install wasm32-unknown-unknown && cargo web start --example basic --release 

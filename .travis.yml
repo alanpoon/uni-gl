@@ -17,3 +17,9 @@ script:
   - "cargo install wasm-pack"
   - "wasm-pack build"
 sudo: false
+deploy:
+  provider: heroku
+  api_key: b835672a-a8c6-4ac1-9243-ec5fbfa1b796
+  app: unigl
+  script:
+  - "npm run serve"
