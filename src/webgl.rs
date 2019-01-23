@@ -8,9 +8,9 @@ use wasm_bindgen::JsCast;
 use web_sys::{Element,WebGlProgram, WebGlRenderingContext, 
 WebGlShader,HtmlCanvasElement,WebGlBuffer};
 
-pub type Reference = *const WebGlRenderingContext;
+pub type Reference = WebGlRenderingContext;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct GLContext {
     pub reference: Reference,
     pub is_webgl2: bool,
@@ -43,47 +43,48 @@ impl GLContext {
            .unwrap()
            .unwrap()
            .dyn_into::<WebGlRenderingContext>().unwrap();
-       
         GLContext {
-            reference: &context,
+            reference: context,
             is_webgl2: true,
         }
     }
 
-    pub fn create_buffer(&self) -> WebGLBuffer {
+    pub fn create_buffer(&self) -> WebGLBuffer<WebGlBuffer> {
         self.log("create_buffer");
-        let mut k:WebGlRenderingContext = *self.reference;
-        k.create_buffer().unwrap();
-        
-        WebGLBuffer(&k)
+        let k:&WebGlRenderingContext = &self.reference;
+        WebGLBuffer(k.create_buffer().unwrap())
     }
 
-    pub fn delete_buffer(&self, buffer: &WebGLBuffer) {
+    pub fn delete_buffer(&self, buffer: &WebGLBuffer<WebGlBuffer>) {
         self.log("delete_buffer");
         let k:WebGlRenderingContext = *self.reference;
         let b2:WebGlBuffer = buffer.deref();
         k.delete_buffer(Some(&b2)).unwrap()
     }
 
-    pub fn buffer_data(&self, kind: BufferKind, data: &[u8], draw: DrawMode) {
+    pub fn buffer_data(&self, kind: BufferKind, data: &mut [u8], draw: DrawMode) {
         self.log("buffer_data");
-        self.reference.buffer_data_with_u8_array(kind as u32, data,draw as u32 )
+        let k:&WebGlRenderingContext = &self.reference;
+        k.buffer_data_with_u8_array(kind as u32, data,draw as u32 )
     }
 
-    pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer) {
+    pub fn bind_buffer(&self, kind: BufferKind, buffer: &WebGLBuffer<WebGlBuffer>) {
         self.log("bind_buffer");
-        self.reference.bind_buffer(kind as u32,buffer);
+        let k:&WebGlRenderingContext = &self.reference;
+        k.bind_buffer(kind as u32,Some(buffer.deref()));
     }
 
     pub fn unbind_buffer(&self, kind: BufferKind) {
         self.log("unbind_buffer");
-        self.reference.bind_buffer(kind as u32,None);
+        let k:&WebGlRenderingContext = &self.reference;
+        k.bind_buffer(kind as u32,None);
     }
 
-    pub fn create_shader(&self, kind: ShaderKind) -> WebGLShader {
+    pub fn create_shader(&self, kind: ShaderKind) -> WebGLShader<WebGlShader> {
         self.log("create_shader");
-        let value = self.reference.create_shader(kind as u32);
-        WebGLShader(value.try_into().unwrap())
+        let k:&WebGlRenderingContext = &self.reference;
+        let value = k.create_shader(kind as u32).unwrap();
+        WebGLShader(value)
     }
 /*
     pub fn shader_source(&self, shader: &WebGLShader, code: &str) {
@@ -234,7 +235,8 @@ impl GLContext {
 */
     pub fn clear_color(&self, r: f32, g: f32, b: f32, a: f32) {
         self.log("clear_color");
-        self.reference.clear_color(r,g,b,a)
+        let k:&WebGlRenderingContext = &self.reference;
+        k.clear_color(r,g,b,a);
     }
 /*
     pub fn enable(&self, flag: i32) {
@@ -296,7 +298,8 @@ impl GLContext {
 */
     pub fn clear(&self, bit: BufferBit) {
         self.log("clear");
-        self.reference.clear(bit as i32);
+        let k:&WebGlRenderingContext = &self.reference;
+        k.clear(bit as u32);
     }
 /*
     pub fn viewport(&self, x: i32, y: i32, width: u32, height: u32) {
