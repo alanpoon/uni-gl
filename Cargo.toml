@@ -9,7 +9,8 @@ repository = "https://github.com/unrust/uni-gl"
 keywords = ["opengl", "wasm"]
 
 [lib]
-crate-type = ["cdylib"]
+name = "uni_gl"
+path = "src/lib.rs"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 gl = "0.6.0"
